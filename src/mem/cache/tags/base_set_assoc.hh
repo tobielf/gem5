@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2012-2014,2017 ARM Limited
+ * Copyright (c) 2019 Arizona State University
  * All rights reserved.
  *
  * The license below extends only to copyright in the software and shall
@@ -38,6 +39,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Erik Hallnor
+ *          Xiangyu Guo
  */
 
 /**
@@ -197,6 +199,9 @@ class BaseSetAssoc : public BaseTags
 
         // Increment tag counter
         tagsInUse++;
+
+        // Update replacement data
+        blk->replacementData->_tag = addr;
 
         // Update replacement policy
         replacementPolicy->reset(blk->replacementData);

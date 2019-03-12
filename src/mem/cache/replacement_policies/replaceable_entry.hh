@@ -1,5 +1,6 @@
 /**
  * Copyright (c) 2018 Inria
+ * Copyright (c) 2019 Arizona State University
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,6 +27,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Daniel Carvalho
+ *          Xiangyu Guo
  */
 
 #ifndef __MEM_CACHE_REPLACEMENT_POLICIES_REPLACEABLE_ENTRY_HH__
@@ -34,11 +36,14 @@
 #include <cstdint>
 #include <memory>
 
+#include "base/types.hh"
+
 /**
  * The replacement data needed by replacement policies. Each replacement policy
  * should have its own implementation of replacement data.
+ * @note Added tag address as part of the replacement data, for SHiP algorithm.
  */
-struct ReplacementData {};
+struct ReplacementData { Addr _tag; };
 
 /**
  * A replaceable entry is a basic entry in a 2d table-like structure that needs

@@ -1,4 +1,5 @@
 # Copyright (c) 2012-2013, 2015-2016 ARM Limited
+# Copyright (c) 2019 Arizona State University
 # All rights reserved
 #
 # The license below extends only to copyright in the software and shall
@@ -37,6 +38,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 # Authors: Lisa Hsu
+#          Xiangyu Guo
 
 # Configure the M5 cache hierarchy config in one place
 #
@@ -88,7 +90,8 @@ def config_cache(options, system):
         # same clock as the CPUs.
         system.l2 = l2_cache_class(clk_domain=system.cpu_clk_domain,
                                    size=options.l2_size,
-                                   assoc=options.l2_assoc)
+                                   assoc=options.l2_assoc,
+                                   replacement_policy=eval(options.l2_rpp))
 
         system.tol2bus = L2XBar(clk_domain = system.cpu_clk_domain)
         system.l2.cpu_side = system.tol2bus.master
