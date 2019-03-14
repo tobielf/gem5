@@ -1,4 +1,5 @@
 # Copyright (c) 2018 Inria
+# Copyright (c) 2019 Arizona State University
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -25,6 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 # Authors: Daniel Carvalho
+#          Xiangyu Guo
 
 from m5.params import *
 from m5.proxy import *
@@ -84,8 +86,18 @@ class BRRIPRP(BaseReplacementPolicy):
     btp = Param.Percent(3,
         "Percentage of blocks to be inserted with long RRPV")
 
+class SHIPRP(BaseReplacementPolicy):
+    type = 'SHIPRP'
+    cxx_class = 'SHIPRP'
+    cxx_header = "mem/cache/replacement_policies/ship_rp.hh"
+    max_RRPV = Param.Int(3, "Maximum RRPV possible")
+
 class RRIPRP(BRRIPRP):
     btp = 0
+
+class SRRIPRP(BRRIPRP):
+    hit_priority = True
+    btp = 100
 
 class NRURP(BRRIPRP):
     btp = 0
