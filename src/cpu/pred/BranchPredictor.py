@@ -63,6 +63,25 @@ class LocalBP(BranchPredictor):
     localCtrBits = Param.Unsigned(2, "Bits per counter")
 
 
+class Local32KBP(LocalBP):
+    localPredictorSize = Param.Unsigned(16384, "Size of local predictor")
+    localCtrBits = Param.Unsigned(2, "Bits per counter")
+
+
+class Local8KBP(LocalBP):
+    localPredictorSize = Param.Unsigned(4096, "Size of local predictor")
+    localCtrBits = Param.Unsigned(2, "Bits per counter")
+
+
+class gDACBP(BranchPredictor):
+    type = 'gDACBP'
+    cxx_class = 'GdacBP'
+    cxx_header = "cpu/pred/gdac.hh"
+
+    localPredictorSize = Param.Unsigned(2048, "Size of local predictor")
+    localCtrBits = Param.Unsigned(2, "Bits per counter")
+
+
 class TournamentBP(BranchPredictor):
     type = 'TournamentBP'
     cxx_class = 'TournamentBP'
@@ -75,6 +94,20 @@ class TournamentBP(BranchPredictor):
     globalCtrBits = Param.Unsigned(2, "Bits per counter")
     choicePredictorSize = Param.Unsigned(8192, "Size of choice predictor")
     choiceCtrBits = Param.Unsigned(2, "Bits of choice counters")
+
+
+class Tournament32KBP(TournamentBP):
+    localPredictorSize = Param.Unsigned(1024, "Size of local predictor")
+    localHistoryTableSize = Param.Unsigned(2048, "size of local history table")
+    globalPredictorSize = Param.Unsigned(4096, "Size of global predictor")
+    choicePredictorSize = Param.Unsigned(4096, "Size of choice predictor")
+
+
+class Tournament8KBP(TournamentBP):
+    localPredictorSize = Param.Unsigned(512, "Size of local predictor")
+    localHistoryTableSize = Param.Unsigned(256, "size of local history table")
+    globalPredictorSize = Param.Unsigned(1024, "Size of global predictor")
+    choicePredictorSize = Param.Unsigned(1024, "Size of choice predictor")
 
 
 class BiModeBP(BranchPredictor):
