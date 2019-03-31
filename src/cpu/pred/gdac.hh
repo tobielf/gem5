@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2014 ARM Limited
+ * Copyright (c) 2019 Arizona State University
  * All rights reserved
  *
  * The license below extends only to copyright in the software and shall
@@ -37,8 +37,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Kevin Lim
- *          Timothy M. Jones
+ * Authors: Xiangyu Guo
  */
 
 #ifndef __CPU_PRED_GDAC_PRED_HH__
@@ -64,6 +63,8 @@ class GdacComponents
   private:
     // Disable default constructor.
     GdacComponents();
+    // Hash function.
+    unsigned hash(Addr branch_addr, unsigned seg);
     // taken direction predictors
     std::vector<SatCounter> takenCounters;
     // not-taken direction predictors

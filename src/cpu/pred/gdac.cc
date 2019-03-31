@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004-2006 The Regents of The University of Michigan
+ * Copyright (c) 2019 Arizona State University
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,7 +25,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Kevin Lim
+ * Authors: Xiangyu Guo
  */
 
 #include "cpu/pred/gdac.hh"
@@ -143,6 +143,7 @@ GdacBP::lookup(ThreadID tid, Addr branch_addr, void * &bp_history)
                                                 choicePrediction);
 
     // fusion table prediction.
+    // ToDo: alternate XOR hash?
     unsigned rootHistoryIdx = (branch_addr >> instShiftAmt)
                                 ^ globalHistoryReg[tid];
     rootHistoryIdx = (rootHistoryIdx << 1) | compPredictionOne;
@@ -270,8 +271,7 @@ GdacComponents::reset()
 bool
 GdacComponents::lookup(Addr branch_addr, unsigned seg, bool takenUsed)
 {
-    unsigned localHistoryIdx = 0;
-    // ToDo: Hash compute the index.
+    unsigned localHistoryIdx = hash(branch_addr, seg);
 
     if (takenUsed) {
         return takenCounters[localHistoryIdx].read() > localThreshold;
@@ -284,8 +284,7 @@ void
 GdacComponents::update(Addr branch_addr, unsigned seg,
                         bool takenUsed, bool taken)
 {
-    unsigned localHistoryIdx = 0;
-    // ToDo: Hash compute the index.
+    unsigned localHistoryIdx = hash(branch_addr, seg);
 
     if (takenUsed) {
         // if the taken array's prediction was used, update it
@@ -302,6 +301,18 @@ GdacComponents::update(Addr branch_addr, unsigned seg,
             notTakenCounters[localHistoryIdx].decrement();
         }
     }
+}
+
+unsigned
+GdacComponents::hash(Addr branch_addr, unsigned seg)
+{
+    unsigned val = seg;
+    while (branch_addr) {
+        val ^= branch_addr & segMask;
+        branch_addr >>= ceilLog2(segSize);
+    }
+
+    return val & segMask;
 }
 
 GdacBP*
