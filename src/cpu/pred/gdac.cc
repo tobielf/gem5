@@ -70,10 +70,10 @@ GdacBP::GdacBP(const gDACBPParams *params)
             choicePredictorSize);
 
     // Setup the array of counters for the root predictor.
-    fushionTable.resize(rootPredictorSize);
+    fusionTable.resize(rootPredictorSize);
 
     for (unsigned i = 0; i < rootPredictorSize; ++i)
-        fushionTable[i].setBits(2);
+        fusionTable[i].setBits(2);
 
     DPRINTF(Fetch, "shared choice predictor size: %i\n",
             rootPredictorSize);
@@ -89,7 +89,7 @@ GdacBP::reset()
     }
 
     for (unsigned i = 0; i < rootPredictorSize; ++i) {
-        fushionTable[i].reset();
+        fusionTable[i].reset();
     }
 
     // ToDo: reset local components.

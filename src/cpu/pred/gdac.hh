@@ -138,9 +138,11 @@ class GdacBP : public BPredUnit
     /** Shared choice predictors */
     std::vector<SatCounter> choiceCounters;
 
+    /** 64 bits global history register */
     std::vector<uint64_t> globalHistoryReg;
 
-    std::vector<SatCounter> fushionTable;
+    /** Root fusion table */
+    std::vector<SatCounter> fusionTable;
 
     /** Size of the choice predictor. */
     unsigned choicePredictorSize;
