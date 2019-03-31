@@ -52,11 +52,11 @@ GdacBP::GdacBP(const gDACBPParams *params)
         fatal("Invalid root predictor size!\n");
     }
 
-    if (!isPowerOf2(segOneBits)) {
+    if (!isPowerOf2(segOneSize)) {
         fatal("Invalid segment one size!\n");
     }
 
-    if (!isPowerOf2(segTwoBits)) {
+    if (!isPowerOf2(segTwoSize)) {
         fatal("Invalid segment two size!\n");
     }
 
@@ -78,7 +78,14 @@ GdacBP::GdacBP(const gDACBPParams *params)
     DPRINTF(Fetch, "shared choice predictor size: %i\n",
             rootPredictorSize);
 
-    // ToDo: Construct local components.
+    // Construct local components.
+    comp[0] = new GdacComponents(segOneSize);
+    comp[1] = new GdacComponents(segTwoSize);
+
+    globalRegisterMask = mask(segOneBits + segTwoBits);
+    choiceHistoryMask = choicePredictorSize - 1;
+
+    choiceThreshold = (ULL(1) << (2 - 1)) - 1;
 }
 
 void
@@ -92,55 +99,157 @@ GdacBP::reset()
         fusionTable[i].reset();
     }
 
-    // ToDo: reset local components.
+    // reset local components.
+    comp[0]->reset();
+    comp[1]->reset();
 }
 
 void
 GdacBP::btbUpdate(ThreadID tid, Addr branch_addr, void * &bp_history)
 {
-// Place holder for a function that is called to update predictor history when
-// a BTB entry is invalid or not found.
+    globalHistoryReg[tid] &= (globalRegisterMask & ~ULL(1));
+}
+
+
+void
+GdacBP::uncondBranch(ThreadID tid, Addr pc, void *&bp_history)
+{
+    BPHistory *history = new BPHistory;
+    history->globalHistoryReg = globalHistoryReg[tid];
+    history->takenUsed = true;
+    history->finalPred = true;
+    bp_history = static_cast<void*>(history);
+    updateGlobalHistReg(tid, true);
 }
 
 
 bool
 GdacBP::lookup(ThreadID tid, Addr branch_addr, void * &bp_history)
 {
-    bool taken = true;
+    unsigned choiceHistoryIdx = ((branch_addr >> instShiftAmt)
+                                & choiceHistoryMask);
+    assert(choiceHistoryIdx < choicePredictorSize);
+    bool choicePrediction = choiceCounters[choiceHistoryIdx].read()
+                            > choiceThreshold;
+    bool compPredictionOne = comp[0]->lookup(branch_addr, choicePrediction);
+    bool compPredictionTwo = comp[1]->lookup(branch_addr, choicePrediction);
+    bool finalPrediction = compPredictionOne && compPredictionTwo;
+    // ToDo: fusion table prediction.
 
-    return taken;
+    BPHistory *history = new BPHistory;
+    history->globalHistoryReg = globalHistoryReg[tid];
+    history->takenUsed = choicePrediction;
+    history->finalPred = finalPrediction;
+    bp_history = static_cast<void*>(history);
+    updateGlobalHistReg(tid, finalPrediction);
+
+    return finalPrediction;
 }
 
 void
 GdacBP::update(ThreadID tid, Addr branch_addr, bool taken, void *bp_history,
                 bool squashed, const StaticInstPtr & inst, Addr corrTarget)
 {
-    assert(bp_history == NULL);
-    unsigned local_predictor_idx;
+    assert(bp_history);
 
-    // No state to restore, and we do not update on the wrong
-    // path.
+    BPHistory *history = static_cast<BPHistory*>(bp_history);
+
+    // We do not update the counters speculatively on a squash.
+    // We just restore the global history register.
     if (squashed) {
+        globalHistoryReg[tid] = (history->globalHistoryReg << 1) | taken;
         return;
     }
 
-    // Update the local predictor.
-    local_predictor_idx = 0;
+    unsigned choiceHistoryIdx = ((branch_addr >> instShiftAmt)
+                                & choiceHistoryMask);
 
-    DPRINTF(Fetch, "Looking up index %#x\n", local_predictor_idx);
+    comp[0]->update(branch_addr, history->takenUsed, taken);
+    comp[1]->update(branch_addr, history->takenUsed, taken);
 
-    if (taken) {
-        DPRINTF(Fetch, "Branch updated as taken.\n");
-        choiceCounters[local_predictor_idx].increment();
+    if (history->finalPred == taken) {
+       /* If the final prediction matches the actual branch's
+        * outcome and the choice predictor matches the final
+        * outcome, we update the choice predictor, otherwise it
+        * is not updated. While the designers of the bi-mode
+        * predictor don't explicity say why this is done, one
+        * can infer that it is to preserve the choice predictor's
+        * bias with respect to the branch being predicted; afterall,
+        * the whole point of the bi-mode predictor is to identify the
+        * atypical case when a branch deviates from its bias.
+        */
+        if (history->finalPred == history->takenUsed) {
+            if (taken) {
+                choiceCounters[choiceHistoryIdx].increment();
+            } else {
+                choiceCounters[choiceHistoryIdx].decrement();
+            }
+        }
     } else {
-        DPRINTF(Fetch, "Branch updated as not taken.\n");
-        choiceCounters[local_predictor_idx].decrement();
+        // always update the choice predictor on an incorrect prediction
+        if (taken) {
+            choiceCounters[choiceHistoryIdx].increment();
+        } else {
+            choiceCounters[choiceHistoryIdx].decrement();
+        }
+    }
+
+    // ToDo: Update root predictor
+
+    delete history;
+}
+
+
+void
+GdacBP::squash(ThreadID tid, void *bp_history)
+{
+    BPHistory *history = static_cast<BPHistory*>(bp_history);
+    globalHistoryReg[tid] = history->globalHistoryReg;
+
+    delete history;
+}
+
+
+void
+GdacBP::updateGlobalHistReg(ThreadID tid, bool taken)
+{
+    globalHistoryReg[tid] = taken ? (globalHistoryReg[tid] << 1) | 1 :
+                               (globalHistoryReg[tid] << 1);
+    globalHistoryReg[tid] &= globalRegisterMask;
+}
+
+GdacComponents::GdacComponents(unsigned seg_Size)
+{
+    segSize = seg_Size;
+
+    takenCounters.resize(segSize);
+    notTakenCounters.resize(segSize);
+
+    for (unsigned i = 0; i < segSize; ++i) {
+        takenCounters[i].setBits(2);
+        notTakenCounters[i].setBits(2);
     }
 }
 
 void
-GdacBP::uncondBranch(ThreadID tid, Addr pc, void *&bp_history)
+GdacComponents::reset()
 {
+    for (unsigned i = 0; i < segSize; ++i) {
+        takenCounters[i].reset();
+        notTakenCounters[i].reset();
+    }
+}
+
+bool
+GdacComponents::lookup(Addr branch_addr, bool takenUsed)
+{
+    return true;
+}
+
+void
+GdacComponents::update(Addr branch_addr, bool takenUsed, bool taken)
+{
+
 }
 
 GdacBP*

@@ -54,13 +54,12 @@
 class GdacComponents
 {
   public:
-    GdacComponents(unsigned segBits, unsigned segSize);
-    void uncondBranch(ThreadID tid, Addr pc, void * &bp_history);
-    bool lookup(ThreadID tid, Addr branch_addr, void * &bp_history);
-    void btbUpdate(ThreadID tid, Addr branch_addr, void * &bp_history);
-    void update(ThreadID tid, Addr branch_addr, bool taken, void *bp_history,
-                bool squashed, const StaticInstPtr & inst, Addr corrTarget);
-    void squash(ThreadID tid, void *bp_history);
+    GdacComponents(unsigned seg_Size);
+
+    bool lookup(Addr branch_addr, bool takenUsed);
+
+    void update(Addr branch_addr, bool takenUsed, bool taken);
+
     void reset();
   private:
     // Disable default constructor.
@@ -69,8 +68,6 @@ class GdacComponents
     std::vector<SatCounter> takenCounters;
     // not-taken direction predictors
     std::vector<SatCounter> notTakenCounters;
-    // segment bits
-    unsigned segBits;
     // table size
     unsigned segSize;
 };
@@ -90,7 +87,7 @@ class GdacBP : public BPredUnit
      */
     GdacBP(const gDACBPParams *params);
 
-    virtual void uncondBranch(ThreadID tid, Addr pc, void * &bp_history);
+    void uncondBranch(ThreadID tid, Addr pc, void * &bp_history);
 
     /**
      * Looks up the given address in the branch predictor and returns
@@ -118,22 +115,24 @@ class GdacBP : public BPredUnit
     void update(ThreadID tid, Addr branch_addr, bool taken, void *bp_history,
                 bool squashed, const StaticInstPtr & inst, Addr corrTarget);
 
-    void squash(ThreadID tid, void *bp_history)
-    { assert(bp_history == NULL); }
+    void squash(ThreadID tid, void *bp_history);
 
     void reset();
 
   private:
-    /**
-     *  Returns the taken/not taken prediction given the value of the
-     *  counter.
-     *  @param count The value of the counter.
-     *  @return The prediction based on the counter value.
-     */
-    inline bool getPrediction(uint8_t &count);
+    void updateGlobalHistReg(ThreadID tid, bool taken);
 
-    /** Calculates the local index based on the PC. */
-    inline unsigned getLocalIndex(Addr &PC);
+    struct BPHistory {
+        unsigned globalHistoryReg;
+        // was the taken array's prediction used?
+        // true: takenPred used
+        // false: notPred used
+        bool takenUsed;
+        // the final taken/not-taken prediction
+        // true: predict taken
+        // false: predict not-taken
+        bool finalPred;
+    };
 
     /** Shared choice predictors */
     std::vector<SatCounter> choiceCounters;
@@ -143,6 +142,11 @@ class GdacBP : public BPredUnit
 
     /** Root fusion table */
     std::vector<SatCounter> fusionTable;
+
+    uint64_t globalRegisterMask;
+    unsigned choiceHistoryMask;
+
+    unsigned choiceThreshold;
 
     /** Size of the choice predictor. */
     unsigned choicePredictorSize;
@@ -161,6 +165,8 @@ class GdacBP : public BPredUnit
 
     /** Size of component two*/
     unsigned segTwoSize;
+
+    GdacComponents *comp[2];
 };
 
 #endif // __CPU_PRED_GDAC_PRED_HH__
