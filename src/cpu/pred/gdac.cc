@@ -37,45 +37,62 @@
 
 GdacBP::GdacBP(const gDACBPParams *params)
     : BPredUnit(params),
-      localPredictorSize(params->localPredictorSize),
-      localCtrBits(params->localCtrBits)
+      choicePredictorSize(params->choicePredictorSize),
+      rootPredictorSize(params->rootPredictorSize),
+      segOneBits(params->segOneBits),
+      segTwoBits(params->segTwoBits),
+      segOneSize(params->segOneSize),
+      segTwoSize(params->segTwoSize)
 {
-    if (!isPowerOf2(localPredictorSize)) {
-        fatal("Invalid local predictor size!\n");
+    if (!isPowerOf2(choicePredictorSize)) {
+        fatal("Invalid shared choice predictor size!\n");
     }
 
-    localPredictorSets = localPredictorSize / localCtrBits;
-
-    if (!isPowerOf2(localPredictorSets)) {
-        fatal("Invalid number of local predictor sets! Check localCtrBits.\n");
+    if (!isPowerOf2(rootPredictorSize)) {
+        fatal("Invalid root predictor size!\n");
     }
 
-    // Setup the index mask.
-    indexMask = localPredictorSets - 1;
+    if (!isPowerOf2(segOneBits)) {
+        fatal("Invalid segment one size!\n");
+    }
 
-    DPRINTF(Fetch, "index mask: %#x\n", indexMask);
+    if (!isPowerOf2(segTwoBits)) {
+        fatal("Invalid segment two size!\n");
+    }
 
-    // Setup the array of counters for the local predictor.
-    localCtrs.resize(localPredictorSets);
+    // Setup the array of counters for the choice predictor.
+    choiceCounters.resize(choicePredictorSize);
 
-    for (unsigned i = 0; i < localPredictorSets; ++i)
-        localCtrs[i].setBits(localCtrBits);
+    for (unsigned i = 0; i < choicePredictorSize; ++i)
+        choiceCounters[i].setBits(2);
 
-    DPRINTF(Fetch, "local predictor size: %i\n",
-            localPredictorSize);
+    DPRINTF(Fetch, "shared choice predictor size: %i\n",
+            choicePredictorSize);
 
-    DPRINTF(Fetch, "local counter bits: %i\n", localCtrBits);
+    // Setup the array of counters for the root predictor.
+    fushionTable.resize(rootPredictorSize);
 
-    DPRINTF(Fetch, "instruction shift amount: %i\n",
-            instShiftAmt);
+    for (unsigned i = 0; i < rootPredictorSize; ++i)
+        fushionTable[i].setBits(2);
+
+    DPRINTF(Fetch, "shared choice predictor size: %i\n",
+            rootPredictorSize);
+
+    // ToDo: Construct local components.
 }
 
 void
 GdacBP::reset()
 {
-    for (unsigned i = 0; i < localPredictorSets; ++i) {
-        localCtrs[i].reset();
+    for (unsigned i = 0; i < choicePredictorSize; ++i) {
+        choiceCounters[i].reset();
     }
+
+    for (unsigned i = 0; i < rootPredictorSize; ++i) {
+        fushionTable[i].reset();
+    }
+
+    // ToDo: reset local components.
 }
 
 void
@@ -89,19 +106,7 @@ GdacBP::btbUpdate(ThreadID tid, Addr branch_addr, void * &bp_history)
 bool
 GdacBP::lookup(ThreadID tid, Addr branch_addr, void * &bp_history)
 {
-    bool taken;
-    uint8_t counter_val;
-    unsigned local_predictor_idx = getLocalIndex(branch_addr);
-
-    DPRINTF(Fetch, "Looking up index %#x\n",
-            local_predictor_idx);
-
-    counter_val = localCtrs[local_predictor_idx].read();
-
-    DPRINTF(Fetch, "prediction is %i.\n",
-            (int)counter_val);
-
-    taken = getPrediction(counter_val);
+    bool taken = true;
 
     return taken;
 }
@@ -120,32 +125,17 @@ GdacBP::update(ThreadID tid, Addr branch_addr, bool taken, void *bp_history,
     }
 
     // Update the local predictor.
-    local_predictor_idx = getLocalIndex(branch_addr);
+    local_predictor_idx = 0;
 
     DPRINTF(Fetch, "Looking up index %#x\n", local_predictor_idx);
 
     if (taken) {
         DPRINTF(Fetch, "Branch updated as taken.\n");
-        localCtrs[local_predictor_idx].increment();
+        choiceCounters[local_predictor_idx].increment();
     } else {
         DPRINTF(Fetch, "Branch updated as not taken.\n");
-        localCtrs[local_predictor_idx].decrement();
+        choiceCounters[local_predictor_idx].decrement();
     }
-}
-
-inline
-bool
-GdacBP::getPrediction(uint8_t &count)
-{
-    // Get the MSB of the count
-    return (count >> (localCtrBits - 1));
-}
-
-inline
-unsigned
-GdacBP::getLocalIndex(Addr &branch_addr)
-{
-    return (branch_addr >> instShiftAmt) & indexMask;
 }
 
 void

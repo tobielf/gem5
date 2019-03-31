@@ -64,12 +64,12 @@ class LocalBP(BranchPredictor):
 
 
 class Local32KBP(LocalBP):
-    localPredictorSize = Param.Unsigned(16384, "Size of local predictor")
+    localPredictorSize = Param.Unsigned(32768, "Size of local predictor")
     localCtrBits = Param.Unsigned(2, "Bits per counter")
 
 
 class Local8KBP(LocalBP):
-    localPredictorSize = Param.Unsigned(4096, "Size of local predictor")
+    localPredictorSize = Param.Unsigned(8192, "Size of local predictor")
     localCtrBits = Param.Unsigned(2, "Bits per counter")
 
 
@@ -78,8 +78,33 @@ class gDACBP(BranchPredictor):
     cxx_class = 'GdacBP'
     cxx_header = "cpu/pred/gdac.hh"
 
-    localPredictorSize = Param.Unsigned(2048, "Size of local predictor")
-    localCtrBits = Param.Unsigned(2, "Bits per counter")
+    choicePredictorSize = Param.Unsigned(2048,
+                            "Size of shared choice predictor")
+    rootPredictorSize = Param.Unsigned(2048, "Size of root predictor")
+    segOneBits = Param.Unsigned(12, "Length of segment one")
+    segTwoBits = Param.Unsigned(16, "Length of segment two")
+    segOneSize = Param.Unsigned(8192, "Size of segment one")
+    segTwoSize = Param.Unsigned(4096, "Size of segment two")
+
+
+class gDAC8KBP(gDACBP):
+    choicePredictorSize = Param.Unsigned(8192,
+                            "Size of shared choice predictor")
+    rootPredictorSize = Param.Unsigned(4096, "Size of root predictor")
+    segOneBits = Param.Unsigned(17, "Length of segment one")
+    segTwoBits = Param.Unsigned(25, "Length of segment two")
+    segOneSize = Param.Unsigned(32768, "Size of segment one")
+    segTwoSize = Param.Unsigned(16384, "Size of segment two")
+
+
+class gDAC32KBP(gDACBP):
+    choicePredictorSize = Param.Unsigned(32768,
+                            "Size of shared choice predictor")
+    rootPredictorSize = Param.Unsigned(16384, "Size of root predictor")
+    segOneBits = Param.Unsigned(8, "Length of segment one")
+    segTwoBits = Param.Unsigned(8, "Length of segment two")
+    segOneSize = Param.Unsigned(2048, "Size of segment one")
+    segTwoSize = Param.Unsigned(2048, "Size of segment two")
 
 
 class TournamentBP(BranchPredictor):

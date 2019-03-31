@@ -53,8 +53,8 @@
 
 class GdacComponents
 {
-public:
-    GdacComponents(int seg_size);
+  public:
+    GdacComponents(unsigned segBits, unsigned segSize);
     void uncondBranch(ThreadID tid, Addr pc, void * &bp_history);
     bool lookup(ThreadID tid, Addr branch_addr, void * &bp_history);
     void btbUpdate(ThreadID tid, Addr branch_addr, void * &bp_history);
@@ -62,6 +62,17 @@ public:
                 bool squashed, const StaticInstPtr & inst, Addr corrTarget);
     void squash(ThreadID tid, void *bp_history);
     void reset();
+  private:
+    // Disable default constructor.
+    GdacComponents();
+    // taken direction predictors
+    std::vector<SatCounter> takenCounters;
+    // not-taken direction predictors
+    std::vector<SatCounter> notTakenCounters;
+    // segment bits
+    unsigned segBits;
+    // table size
+    unsigned segSize;
 };
 
 /**
@@ -124,20 +135,30 @@ class GdacBP : public BPredUnit
     /** Calculates the local index based on the PC. */
     inline unsigned getLocalIndex(Addr &PC);
 
-    /** Array of counters that make up the local predictor. */
-    std::vector<SatCounter> localCtrs;
+    /** Shared choice predictors */
+    std::vector<SatCounter> choiceCounters;
 
-    /** Size of the local predictor. */
-    unsigned localPredictorSize;
+    std::vector<uint64_t> globalHistoryReg;
 
-    /** Number of sets. */
-    unsigned localPredictorSets;
+    std::vector<SatCounter> fushionTable;
 
-    /** Number of bits of the local predictor's counters. */
-    unsigned localCtrBits;
+    /** Size of the choice predictor. */
+    unsigned choicePredictorSize;
 
-    /** Mask to get index bits. */
-    unsigned indexMask;
+    /** Size of the root predictor. */
+    unsigned rootPredictorSize;
+
+    /** length of segment one */
+    unsigned segOneBits;
+
+    /** length of segment two */
+    unsigned segTwoBits;
+
+    /** Size of component one */
+    unsigned segOneSize;
+
+    /** Size of component two*/
+    unsigned segTwoSize;
 };
 
 #endif // __CPU_PRED_GDAC_PRED_HH__
