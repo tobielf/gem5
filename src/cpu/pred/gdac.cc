@@ -37,6 +37,7 @@
 
 GdacBP::GdacBP(const gDACBPParams *params)
     : BPredUnit(params),
+      globalHistoryReg(params->numThreads, 0),
       choicePredictorSize(params->choicePredictorSize),
       rootPredictorSize(params->rootPredictorSize),
       segOneBits(params->segOneBits),
@@ -73,9 +74,9 @@ GdacBP::GdacBP(const gDACBPParams *params)
     fusionTable.resize(rootPredictorSize);
 
     for (unsigned i = 0; i < rootPredictorSize; ++i)
-        fusionTable[i].setBits(2);
+        fusionTable[i].setBits(4);
 
-    DPRINTF(Fetch, "shared choice predictor size: %i\n",
+    DPRINTF(Fetch, "root fusion predictor size: %i\n",
             rootPredictorSize);
 
     // Construct local components.
@@ -84,8 +85,10 @@ GdacBP::GdacBP(const gDACBPParams *params)
 
     globalRegisterMask = mask(segOneBits + segTwoBits);
     choiceHistoryMask = choicePredictorSize - 1;
+    rootHistoryMask = rootPredictorSize - 1;
 
     choiceThreshold = (ULL(1) << (2 - 1)) - 1;
+    rootThreshold = (ULL(1) << (4 - 1)) - 1;
 }
 
 void
@@ -128,16 +131,29 @@ GdacBP::lookup(ThreadID tid, Addr branch_addr, void * &bp_history)
 {
     unsigned choiceHistoryIdx = ((branch_addr >> instShiftAmt)
                                 & choiceHistoryMask);
+    unsigned seg1 = (globalHistoryReg[tid] >> segTwoBits) & mask(segOneBits);
+    unsigned seg2 = (globalHistoryReg[tid]) & mask(segTwoBits);
+
     assert(choiceHistoryIdx < choicePredictorSize);
     bool choicePrediction = choiceCounters[choiceHistoryIdx].read()
                             > choiceThreshold;
-    bool compPredictionOne = comp[0]->lookup(branch_addr, choicePrediction);
-    bool compPredictionTwo = comp[1]->lookup(branch_addr, choicePrediction);
-    bool finalPrediction = compPredictionOne && compPredictionTwo;
-    // ToDo: fusion table prediction.
+    bool compPredictionOne = comp[0]->lookup(branch_addr, seg1,
+                                                choicePrediction);
+    bool compPredictionTwo = comp[1]->lookup(branch_addr, seg2,
+                                                choicePrediction);
+
+    // fusion table prediction.
+    unsigned rootHistoryIdx = (branch_addr >> instShiftAmt)
+                                ^ globalHistoryReg[tid];
+    rootHistoryIdx = (rootHistoryIdx << 1) | compPredictionOne;
+    rootHistoryIdx = (rootHistoryIdx << 1) | compPredictionTwo;
+    rootHistoryIdx &= rootHistoryMask;
+    assert(rootHistoryIdx < rootPredictorSize);
+    bool finalPrediction = fusionTable[rootHistoryIdx].read() > rootThreshold;
 
     BPHistory *history = new BPHistory;
     history->globalHistoryReg = globalHistoryReg[tid];
+    history->rootHistoryIdx = rootHistoryIdx;
     history->takenUsed = choicePrediction;
     history->finalPred = finalPrediction;
     bp_history = static_cast<void*>(history);
@@ -163,9 +179,12 @@ GdacBP::update(ThreadID tid, Addr branch_addr, bool taken, void *bp_history,
 
     unsigned choiceHistoryIdx = ((branch_addr >> instShiftAmt)
                                 & choiceHistoryMask);
+    assert(choiceHistoryIdx < choicePredictorSize);
+    unsigned seg1 = (globalHistoryReg[tid] >> segTwoBits) & mask(segOneBits);
+    unsigned seg2 = (globalHistoryReg[tid]) & mask(segTwoBits);
 
-    comp[0]->update(branch_addr, history->takenUsed, taken);
-    comp[1]->update(branch_addr, history->takenUsed, taken);
+    comp[0]->update(branch_addr, seg1, history->takenUsed, taken);
+    comp[1]->update(branch_addr, seg2, history->takenUsed, taken);
 
     if (history->finalPred == taken) {
        /* If the final prediction matches the actual branch's
@@ -194,7 +213,12 @@ GdacBP::update(ThreadID tid, Addr branch_addr, bool taken, void *bp_history,
         }
     }
 
-    // ToDo: Update root predictor
+    // Update root predictor
+    if (taken) {
+        fusionTable[history->rootHistoryIdx].increment();
+    } else {
+        fusionTable[history->rootHistoryIdx].decrement();
+    }
 
     delete history;
 }
@@ -221,6 +245,7 @@ GdacBP::updateGlobalHistReg(ThreadID tid, bool taken)
 GdacComponents::GdacComponents(unsigned seg_Size)
 {
     segSize = seg_Size;
+    segMask = segSize - 1;
 
     takenCounters.resize(segSize);
     notTakenCounters.resize(segSize);
@@ -229,6 +254,8 @@ GdacComponents::GdacComponents(unsigned seg_Size)
         takenCounters[i].setBits(2);
         notTakenCounters[i].setBits(2);
     }
+
+    localThreshold = (ULL(1) << (2 - 1)) - 1;
 }
 
 void
@@ -241,15 +268,40 @@ GdacComponents::reset()
 }
 
 bool
-GdacComponents::lookup(Addr branch_addr, bool takenUsed)
+GdacComponents::lookup(Addr branch_addr, unsigned seg, bool takenUsed)
 {
-    return true;
+    unsigned localHistoryIdx = 0;
+    // ToDo: Hash compute the index.
+
+    if (takenUsed) {
+        return takenCounters[localHistoryIdx].read() > localThreshold;
+    } else {
+        return notTakenCounters[localHistoryIdx].read() > localThreshold;
+    }
 }
 
 void
-GdacComponents::update(Addr branch_addr, bool takenUsed, bool taken)
+GdacComponents::update(Addr branch_addr, unsigned seg,
+                        bool takenUsed, bool taken)
 {
+    unsigned localHistoryIdx = 0;
+    // ToDo: Hash compute the index.
 
+    if (takenUsed) {
+        // if the taken array's prediction was used, update it
+        if (taken) {
+            takenCounters[localHistoryIdx].increment();
+        } else {
+            takenCounters[localHistoryIdx].decrement();
+        }
+    } else {
+        // if the not-taken array's prediction was used, update it
+        if (taken) {
+            notTakenCounters[localHistoryIdx].increment();
+        } else {
+            notTakenCounters[localHistoryIdx].decrement();
+        }
+    }
 }
 
 GdacBP*

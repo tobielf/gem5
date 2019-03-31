@@ -56,9 +56,9 @@ class GdacComponents
   public:
     GdacComponents(unsigned seg_Size);
 
-    bool lookup(Addr branch_addr, bool takenUsed);
+    bool lookup(Addr branch_addr, unsigned seg, bool takenUsed);
 
-    void update(Addr branch_addr, bool takenUsed, bool taken);
+    void update(Addr branch_addr, unsigned seg, bool takenUsed, bool taken);
 
     void reset();
   private:
@@ -70,6 +70,10 @@ class GdacComponents
     std::vector<SatCounter> notTakenCounters;
     // table size
     unsigned segSize;
+    // table mask
+    unsigned segMask;
+    // threshold
+    unsigned localThreshold;
 };
 
 /**
@@ -103,7 +107,6 @@ class GdacBP : public BPredUnit
      * invalid or not found.
      * @param branch_addr The address of the branch to look up.
      * @param bp_history Pointer to any bp history state.
-     * @return Whether or not the branch is taken.
      */
     void btbUpdate(ThreadID tid, Addr branch_addr, void * &bp_history);
 
@@ -124,6 +127,7 @@ class GdacBP : public BPredUnit
 
     struct BPHistory {
         unsigned globalHistoryReg;
+        unsigned rootHistoryIdx;
         // was the taken array's prediction used?
         // true: takenPred used
         // false: notPred used
@@ -145,8 +149,10 @@ class GdacBP : public BPredUnit
 
     uint64_t globalRegisterMask;
     unsigned choiceHistoryMask;
+    unsigned rootHistoryMask;
 
     unsigned choiceThreshold;
+    unsigned rootThreshold;
 
     /** Size of the choice predictor. */
     unsigned choicePredictorSize;
