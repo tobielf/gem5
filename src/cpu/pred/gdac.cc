@@ -64,9 +64,6 @@ GdacBP::GdacBP(const gDACBPParams *params)
     // Setup the array of counters for the choice predictor.
     choiceCounters.resize(choicePredictorSize);
 
-    for (unsigned i = 0; i < choicePredictorSize; ++i)
-        choiceCounters[i].setBits(2);
-
     DPRINTF(Fetch, "shared choice predictor size: %i\n",
             choicePredictorSize);
 
@@ -94,9 +91,7 @@ GdacBP::GdacBP(const gDACBPParams *params)
 void
 GdacBP::reset()
 {
-    for (unsigned i = 0; i < choicePredictorSize; ++i) {
-        choiceCounters[i].reset();
-    }
+    choiceCounters.reset();
 
     for (unsigned i = 0; i < rootPredictorSize; ++i) {
         fusionTable[i].reset();
@@ -135,8 +130,7 @@ GdacBP::lookup(ThreadID tid, Addr branch_addr, void * &bp_history)
     unsigned seg2 = (globalHistoryReg[tid]) & mask(segTwoBits);
 
     assert(choiceHistoryIdx < choicePredictorSize);
-    bool choicePrediction = choiceCounters[choiceHistoryIdx].read()
-                            > choiceThreshold;
+    bool choicePrediction = choiceCounters.predict(choiceHistoryIdx);
     bool compPredictionOne = comp[0]->lookup(branch_addr, seg1,
                                                 choicePrediction);
     bool compPredictionTwo = comp[1]->lookup(branch_addr, seg2,
@@ -200,17 +194,17 @@ GdacBP::update(ThreadID tid, Addr branch_addr, bool taken, void *bp_history,
         */
         if (history->finalPred == history->takenUsed) {
             if (taken) {
-                choiceCounters[choiceHistoryIdx].increment();
+                choiceCounters.increment(choiceHistoryIdx);
             } else {
-                choiceCounters[choiceHistoryIdx].decrement();
+                choiceCounters.decrement(choiceHistoryIdx);
             }
         }
     } else {
         // always update the choice predictor on an incorrect prediction
         if (taken) {
-            choiceCounters[choiceHistoryIdx].increment();
+            choiceCounters.increment(choiceHistoryIdx);
         } else {
-            choiceCounters[choiceHistoryIdx].decrement();
+            choiceCounters.decrement(choiceHistoryIdx);
         }
     }
 
@@ -251,21 +245,14 @@ GdacComponents::GdacComponents(unsigned seg_Size)
     takenCounters.resize(segSize);
     notTakenCounters.resize(segSize);
 
-    for (unsigned i = 0; i < segSize; ++i) {
-        takenCounters[i].setBits(2);
-        notTakenCounters[i].setBits(2);
-    }
-
     localThreshold = (ULL(1) << (2 - 1)) - 1;
 }
 
 void
 GdacComponents::reset()
 {
-    for (unsigned i = 0; i < segSize; ++i) {
-        takenCounters[i].reset();
-        notTakenCounters[i].reset();
-    }
+    takenCounters.reset();
+    notTakenCounters.reset();
 }
 
 bool
@@ -274,9 +261,9 @@ GdacComponents::lookup(Addr branch_addr, unsigned seg, bool takenUsed)
     unsigned localHistoryIdx = hash(branch_addr, seg);
 
     if (takenUsed) {
-        return takenCounters[localHistoryIdx].read() > localThreshold;
+        return takenCounters.predict(localHistoryIdx);
     } else {
-        return notTakenCounters[localHistoryIdx].read() > localThreshold;
+        return notTakenCounters.predict(localHistoryIdx);
     }
 }
 
@@ -289,16 +276,16 @@ GdacComponents::update(Addr branch_addr, unsigned seg,
     if (takenUsed) {
         // if the taken array's prediction was used, update it
         if (taken) {
-            takenCounters[localHistoryIdx].increment();
+            takenCounters.increment(localHistoryIdx);
         } else {
-            takenCounters[localHistoryIdx].decrement();
+            takenCounters.decrement(localHistoryIdx);
         }
     } else {
         // if the not-taken array's prediction was used, update it
         if (taken) {
-            notTakenCounters[localHistoryIdx].increment();
+            notTakenCounters.increment(localHistoryIdx);
         } else {
-            notTakenCounters[localHistoryIdx].decrement();
+            notTakenCounters.decrement(localHistoryIdx);
         }
     }
 }

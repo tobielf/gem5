@@ -47,6 +47,7 @@
 
 #include "base/types.hh"
 #include "cpu/pred/bpred_unit.hh"
+#include "cpu/pred/gdac_counter.hh"
 #include "cpu/pred/sat_counter.hh"
 #include "params/gDACBP.hh"
 
@@ -66,9 +67,9 @@ class GdacComponents
     // Hash function.
     unsigned hash(Addr branch_addr, unsigned seg);
     // taken direction predictors
-    std::vector<SatCounter> takenCounters;
+    GDACCounter takenCounters;
     // not-taken direction predictors
-    std::vector<SatCounter> notTakenCounters;
+    GDACCounter notTakenCounters;
     // table size
     unsigned segSize;
     // table mask
@@ -140,7 +141,7 @@ class GdacBP : public BPredUnit
     };
 
     /** Shared choice predictors */
-    std::vector<SatCounter> choiceCounters;
+    GDACCounter choiceCounters;
 
     /** 64 bits global history register */
     std::vector<uint64_t> globalHistoryReg;
