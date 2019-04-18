@@ -1,0 +1,90 @@
+2bits-8K-bfs
+system.cpu.ipc                               0.970990                       # IPC: Instructions Per Cycle
+system.cpu.ipc_total                         0.970990                       # IPC: Total IPC of All Threads
+system.cpu.branchPred.condPredicted          16047035                       # Number of conditional branches predicted
+system.cpu.branchPred.condIncorrect            640512                       # Number of conditional branches incorrect
+2bits-8K-mst
+system.cpu.ipc                               1.149393                       # IPC: Instructions Per Cycle
+system.cpu.ipc_total                         1.149393                       # IPC: Total IPC of All Threads
+system.cpu.branchPred.condPredicted           7090348                       # Number of conditional branches predicted
+system.cpu.branchPred.condIncorrect            291800                       # Number of conditional branches incorrect
+2bits-8K-que
+system.cpu.ipc                               0.718037                       # IPC: Instructions Per Cycle
+system.cpu.ipc_total                         0.718037                       # IPC: Total IPC of All Threads
+system.cpu.branchPred.condPredicted          10737933                       # Number of conditional branches predicted
+system.cpu.branchPred.condIncorrect           1263590                       # Number of conditional branches incorrect
+2bits-32k-bfs
+system.cpu.ipc                               0.971199                       # IPC: Instructions Per Cycle
+system.cpu.ipc_total                         0.971199                       # IPC: Total IPC of All Threads
+system.cpu.branchPred.condPredicted          16046555                       # Number of conditional branches predicted
+system.cpu.branchPred.condIncorrect            640507                       # Number of conditional branches incorrect
+2bits-32k-mst
+system.cpu.ipc                               1.146514                       # IPC: Instructions Per Cycle
+system.cpu.ipc_total                         1.146514                       # IPC: Total IPC of All Threads
+system.cpu.branchPred.condPredicted           7162527                       # Number of conditional branches predicted
+system.cpu.branchPred.condIncorrect            287633                       # Number of conditional branches incorrect
+2bits-32k-que
+system.cpu.ipc                               0.717959                       # IPC: Instructions Per Cycle
+system.cpu.ipc_total                         0.717959                       # IPC: Total IPC of All Threads
+system.cpu.branchPred.condPredicted          10736067                       # Number of conditional branches predicted
+system.cpu.branchPred.condIncorrect           1263852                       # Number of conditional branches incorrect
+tour-8k-bfs
+system.cpu.ipc                               1.066815                       # IPC: Instructions Per Cycle
+system.cpu.ipc_total                         1.066815                       # IPC: Total IPC of All Threads
+system.cpu.branchPred.condPredicted          13869043                       # Number of conditional branches predicted
+system.cpu.branchPred.condIncorrect            401047                       # Number of conditional branches incorrect
+tour-8k-mst
+system.cpu.ipc                               1.146922                       # IPC: Instructions Per Cycle
+system.cpu.ipc_total                         1.146922                       # IPC: Total IPC of All Threads
+system.cpu.branchPred.condPredicted           7095417                       # Number of conditional branches predicted
+system.cpu.branchPred.condIncorrect            310171                       # Number of conditional branches incorrect
+tour-8k-que
+system.cpu.ipc                               0.689490                       # IPC: Instructions Per Cycle
+system.cpu.ipc_total                         0.689490                       # IPC: Total IPC of All Threads
+system.cpu.branchPred.condPredicted          11516084                       # Number of conditional branches predicted
+system.cpu.branchPred.condIncorrect           1380054                       # Number of conditional branches incorrect
+tour-32K-bfs
+system.cpu.ipc                               1.076808                       # IPC: Instructions Per Cycle
+system.cpu.ipc_total                         1.076808                       # IPC: Total IPC of All Threads
+system.cpu.branchPred.condPredicted          13644023                       # Number of conditional branches predicted
+system.cpu.branchPred.condIncorrect            374327                       # Number of conditional branches incorrect
+tour-32K-mst
+system.cpu.ipc                               1.179136                       # IPC: Instructions Per Cycle
+system.cpu.ipc_total                         1.179136                       # IPC: Total IPC of All Threads
+system.cpu.branchPred.condPredicted           6850917                       # Number of conditional branches predicted
+system.cpu.branchPred.condIncorrect            279673                       # Number of conditional branches incorrect
+tour-32K-que
+system.cpu.ipc                               0.691357                       # IPC: Instructions Per Cycle
+system.cpu.ipc_total                         0.691357                       # IPC: Total IPC of All Threads
+system.cpu.branchPred.condPredicted          11533629                       # Number of conditional branches predicted
+system.cpu.branchPred.condIncorrect           1376330                       # Number of conditional branches incorrect
+gdac-8k-bfs
+system.cpu.ipc                               0.973918                       # IPC: Instructions Per Cycle
+system.cpu.ipc_total                         0.973918                       # IPC: Total IPC of All Threads
+system.cpu.branchPred.condPredicted          16073999                       # Number of conditional branches predicted
+system.cpu.branchPred.condIncorrect            655234                       # Number of conditional branches incorrect
+gdac-8k-mst
+system.cpu.ipc                               1.128399                       # IPC: Instructions Per Cycle
+system.cpu.ipc_total                         1.128399                       # IPC: Total IPC of All Threads
+system.cpu.branchPred.condPredicted           7141376                       # Number of conditional branches predicted
+system.cpu.branchPred.condIncorrect            316391                       # Number of conditional branches incorrect
+gdac-8k-que
+system.cpu.ipc                               0.796226                       # IPC: Instructions Per Cycle
+system.cpu.ipc_total                         0.796226                       # IPC: Total IPC of All Threads
+system.cpu.branchPred.condPredicted           9564084                       # Number of conditional branches predicted
+system.cpu.branchPred.condIncorrect           1067438                       # Number of conditional branches incorrect
+gdac-32k-bfs
+system.cpu.ipc                               0.950655                       # IPC: Instructions Per Cycle
+system.cpu.ipc_total                         0.950655                       # IPC: Total IPC of All Threads
+system.cpu.branchPred.condPredicted          16998399                       # Number of conditional branches predicted
+system.cpu.branchPred.condIncorrect            820409                       # Number of conditional branches incorrect
+gdac-32k-mst
+system.cpu.ipc                               1.155693                       # IPC: Instructions Per Cycle
+system.cpu.ipc_total                         1.155693                       # IPC: Total IPC of All Threads
+system.cpu.branchPred.condPredicted           7020067                       # Number of conditional branches predicted
+system.cpu.branchPred.condIncorrect            326060                       # Number of conditional branches incorrect
+gdac-32k-que
+system.cpu.ipc                               0.800008                       # IPC: Instructions Per Cycle
+system.cpu.ipc_total                         0.800008                       # IPC: Total IPC of All Threads
+system.cpu.branchPred.condPredicted           9611564                       # Number of conditional branches predicted
+system.cpu.branchPred.condIncorrect           1059857                       # Number of conditional branches incorrect
